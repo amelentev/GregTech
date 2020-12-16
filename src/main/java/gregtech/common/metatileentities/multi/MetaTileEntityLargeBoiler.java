@@ -121,6 +121,7 @@ public class MetaTileEntityLargeBoiler extends MultiblockWithDisplayBase {
     private int currentTemperature;
     private int fuelBurnTicksLeft;
     private int throttlePercentage = 100;
+    private boolean throttleAuto = false;
     private boolean isActive;
     private boolean wasActiveAndNeedsUpdate;
     private boolean hasNoWater;
@@ -191,6 +192,8 @@ public class MetaTileEntityLargeBoiler extends MultiblockWithDisplayBase {
             buttonText.appendSibling(withButton(new TextComponentString("[-]"), "sub"));
             buttonText.appendText(" ");
             buttonText.appendSibling(withButton(new TextComponentString("[+]"), "add"));
+            buttonText.appendText(" ");
+            buttonText.appendSibling(withButton(new TextComponentString("auto:" + (throttleAuto ? "[v]" : "[ ]")), "autoThrottle"));
             textList.add(buttonText);
         }
     }
@@ -198,9 +201,14 @@ public class MetaTileEntityLargeBoiler extends MultiblockWithDisplayBase {
     @Override
     protected void handleDisplayClick(String componentData, ClickData clickData) {
         super.handleDisplayClick(componentData, clickData);
-        int modifier = componentData.equals("add") ? 1 : -1;
-        int result = (clickData.isShiftClick ? 1 : 5) * modifier;
-        this.throttlePercentage = MathHelper.clamp(throttlePercentage + result, 20, 100);
+        if (componentData.equals("autoThrottle")) {
+            throttleAuto = !throttleAuto;
+        } else {
+            throttleAuto = false;
+            int modifier = componentData.equals("add") ? 1 : -1;
+            int result = (clickData.isShiftClick ? 1 : 5) * modifier;
+            this.throttlePercentage = MathHelper.clamp(throttlePercentage + result, 20, 100);
+        }
     }
 
     private double getHeatEfficiencyMultiplier() {
@@ -270,6 +278,10 @@ public class MetaTileEntityLargeBoiler extends MultiblockWithDisplayBase {
     }
 
     private int setupRecipeAndConsumeInputs() {
+        if (throttleAuto && steamOutputTank.getTanks() > 0) {
+            IFluidTank steamTank = steamOutputTank.getTankAt(0);
+            throttlePercentage = MathHelper.clamp(100 - 100 * steamTank.getFluidAmount() / steamTank.getCapacity(), 20, 100);
+        }
         for (IFluidTank fluidTank : fluidImportInventory.getFluidTanks()) {
             FluidStack fuelStack = fluidTank.drain(Integer.MAX_VALUE, false);
             if (fuelStack == null || ModHandler.isWater(fuelStack))
@@ -319,6 +331,7 @@ public class MetaTileEntityLargeBoiler extends MultiblockWithDisplayBase {
         data.setInteger("FuelBurnTicksLeft", fuelBurnTicksLeft);
         data.setBoolean("HasNoWater", hasNoWater);
         data.setInteger("ThrottlePercentage", throttlePercentage);
+        data.setBoolean("ThrottleAuto", throttleAuto);
         return data;
     }
 
@@ -330,6 +343,9 @@ public class MetaTileEntityLargeBoiler extends MultiblockWithDisplayBase {
         this.hasNoWater = data.getBoolean("HasNoWater");
         if(data.hasKey("ThrottlePercentage")) {
             this.throttlePercentage = data.getInteger("ThrottlePercentage");
+        }
+        if(data.hasKey("ThrottleAuto")) {
+            this.throttleAuto = data.getBoolean("ThrottleAuto");
         }
         this.isActive = fuelBurnTicksLeft > 0;
     }
