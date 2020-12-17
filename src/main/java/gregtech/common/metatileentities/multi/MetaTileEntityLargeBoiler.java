@@ -60,6 +60,7 @@ public class MetaTileEntityLargeBoiler extends MultiblockWithDisplayBase {
 
     private static final int CONSUMPTION_MULTIPLIER = 100;
     private static final int BOILING_TEMPERATURE = 100;
+    private static final int THROTTLE_MIN = 20;
 
     public enum BoilerType {
         BRONZE(900, 1.0f, 28, 500,
@@ -187,14 +188,20 @@ public class MetaTileEntityLargeBoiler extends MultiblockWithDisplayBase {
             withHoverTextTranslate(throttleText, "gregtech.multiblock.large_boiler.throttle.tooltip");
             textList.add(throttleText);
 
-            ITextComponent buttonText = new TextComponentTranslation("gregtech.multiblock.large_boiler.throttle_modify");
-            buttonText.appendText(" ");
-            buttonText.appendSibling(withButton(new TextComponentString("[-]"), "sub"));
-            buttonText.appendText(" ");
-            buttonText.appendSibling(withButton(new TextComponentString("[+]"), "add"));
-            buttonText.appendText(" ");
-            buttonText.appendSibling(withButton(new TextComponentString("auto:" + (throttleAuto ? "[v]" : "[ ]")), "autoThrottle"));
-            textList.add(buttonText);
+            if (!throttleAuto) {
+                ITextComponent buttonText = new TextComponentTranslation("gregtech.multiblock.large_boiler.throttle_modify");
+                buttonText.appendText(" ");
+                buttonText.appendSibling(withButton(new TextComponentString("[-]"), "sub"));
+                buttonText.appendText(" ");
+                buttonText.appendSibling(withButton(new TextComponentString("[+]"), "add"));
+                textList.add(buttonText);
+            }
+
+            ITextComponent throttleAutoButton = new TextComponentTranslation("gregtech.multiblock.large_boiler.throttle_auto")
+                .appendText(" ")
+                .appendSibling(withButton(new TextComponentString(throttleAuto ? "[v]" : "[ ]"), "autoThrottle"));
+            withHoverTextTranslate(throttleAutoButton, "gregtech.multiblock.large_boiler.throttle_auto_tooltip");
+            textList.add(throttleAutoButton);
         }
     }
 
@@ -207,7 +214,7 @@ public class MetaTileEntityLargeBoiler extends MultiblockWithDisplayBase {
             throttleAuto = false;
             int modifier = componentData.equals("add") ? 1 : -1;
             int result = (clickData.isShiftClick ? 1 : 5) * modifier;
-            this.throttlePercentage = MathHelper.clamp(throttlePercentage + result, 20, 100);
+            this.throttlePercentage = MathHelper.clamp(throttlePercentage + result, THROTTLE_MIN, 100);
         }
     }
 
@@ -280,7 +287,8 @@ public class MetaTileEntityLargeBoiler extends MultiblockWithDisplayBase {
     private int setupRecipeAndConsumeInputs() {
         if (throttleAuto && steamOutputTank.getTanks() > 0) {
             IFluidTank steamTank = steamOutputTank.getTankAt(0);
-            throttlePercentage = MathHelper.clamp(100 - 100 * steamTank.getFluidAmount() / steamTank.getCapacity(), 20, 100);
+            int goal = 100 - 100 * steamTank.getFluidAmount() / steamTank.getCapacity();
+            throttlePercentage = MathHelper.clamp((goal + throttlePercentage + 1) / 2, THROTTLE_MIN, 100);
         }
         for (IFluidTank fluidTank : fluidImportInventory.getFluidTanks()) {
             FluidStack fuelStack = fluidTank.drain(Integer.MAX_VALUE, false);

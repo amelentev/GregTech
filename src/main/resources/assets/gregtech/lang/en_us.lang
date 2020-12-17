@@ -2952,6 +2952,8 @@ gregtech.multiblock.large_boiler.heat_efficiency=Heat Efficiency: %d%%
 gregtech.multiblock.large_boiler.heat_efficiency.tooltip=The higher boiler temperature is, the higher it's fuel efficiency
 gregtech.multiblock.large_boiler.throttle.tooltip=Boiler can output less steam and consume less fuel, but it comes with price: the fuel efficiency is lower at higher throttle rates.
 gregtech.multiblock.large_boiler.throttle_modify=Modify Throttle:
+gregtech.multiblock.large_boiler.throttle_auto=Auto Throttle:
+gregtech.multiblock.large_boiler.throttle_auto_tooltip=Automatic throttle based on steam hatch fullness.
 
 gregtech.command.usage=Usage: /gregtech <worldgen/util>
 gregtech.command.worldgen.usage=Usage: /gregtech worldgen <reload>
